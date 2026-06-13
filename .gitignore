@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.test
+.env.test.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+.code-workspace
+
+# Expo
+.expo/
+.expo-shared/
+dist/
+
+# React Native
+ios/Pods/
+ios/Podfile.lock
+android/app/debug.keystore
+android/app/release.keystore
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+
+# Build files
+build/
+dist/
+.next/
+out/
+*.apk
+*.aab
+*.ipa
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+*.tmp
+tmp/
+temp/
+.cache
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies lock files (optional, can be committed)
+# package-lock.json
+# yarn.lock
