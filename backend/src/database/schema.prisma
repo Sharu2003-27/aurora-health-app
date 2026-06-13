@@ -1,0 +1,206 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  password          String?
+  name              String
+  age               Int?
+  gender            String?  // "male", "female", "other"
+  height            Int?     // cm
+  weight            Int?     // kg
+  wakeUpTime        String?  // HH:mm format
+  bedtime           String?  // HH:mm format
+  activityLevel     String?  // "sedentary", "lightly_active", "moderately_active", "very_active"
+  profileImage      String?
+  bio               String?
+  phone             String?  @unique
+  
+  // Oauth
+  googleId          String?  @unique
+  appleId           String?  @unique
+  
+  // Settings
+  notificationEnabled Boolean @default(true)
+  hydrationReminder   Boolean @default(true)
+  sleepReminder       Boolean @default(true)
+  habitReminder       Boolean @default(true)
+  insightReminder     Boolean @default(true)
+  
+  // Relationships
+  healthGoals       HealthGoal[]
+  hydrationEntries  HydrationEntry[]
+  sleepEntries      SleepEntry[]
+  habits            Habit[]
+  habitCompletions  HabitCompletion[]
+  nutritionEntries  NutritionEntry[]
+  notifications     Notification[]
+  aiMemories        AIMemory[]
+  chatMessages      ChatMessage[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([email])
+  @@index([googleId])
+  @@index([appleId])
+}
+
+model HealthGoal {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal      String   // "improve_hydration", "sleep_better", etc.
+  status    String   @default("active") // "active", "completed", "abandoned"
+  createdAt DateTime @default(now())
+  completedAt DateTime?
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model HydrationEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount    Int      // ml
+  source    String   @default("manual") // "manual", "device"
+  notes     String?
+  timestamp DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([timestamp])
+}
+
+model SleepEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startTime DateTime
+  endTime   DateTime
+  duration  Int      // minutes
+  quality   String?  // "poor", "fair", "good", "excellent"
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([startTime])
+}
+
+model Habit {
+  id            String @id @default(cuid())
+  userId        String
+  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?
+  frequency     String @default("daily") // "daily", "weekly", "custom"
+  targetDays    Int[]  @default([]) // 0-6 for weekly (0=Sunday)
+  color         String?
+  icon          String?
+  isActive      Boolean @default(true)
+  
+  // Relationships
+  completions   HabitCompletion[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isActive])
+}
+
+model HabitCompletion {
+  id          String   @id @default(cuid())
+  habitId     String
+  habit       Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notes       String?
+  completedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@unique([habitId, userId, completedAt])
+  @@index([habitId])
+  @@index([userId])
+  @@index([completedAt])
+}
+
+model NutritionEntry {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mealType      String   // "breakfast", "lunch", "dinner", "snack"
+  foodItems     String   // JSON array
+  totalCalories Int
+  totalProtein  Int      // grams
+  totalCarbs    Int      // grams
+  totalFat      Int      // grams
+  notes         String?
+  timestamp     DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([timestamp])
+}
+
+model AIMemory {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  observation   String
+  category      String   // "pattern", "preference", "achievement", "challenge"
+  importance    Int      // 1-10
+  relevantUntil DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([category])
+  @@index([importance])
+}
+
+model ChatMessage {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          String   // "user", "assistant"
+  content       String   @db.Text
+  isVoice       Boolean  @default(false)
+  transcription String?  @db.Text
+  audioUrl      String?
+  timestamp     DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([timestamp])
+}
+
+model Notification {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          String   // "hydration", "sleep", "habit", "insight", "achievement"
+  title         String
+  message       String   @db.Text
+  isRead        Boolean  @default(false)
+  actionData    String?  // JSON data for action
+  scheduledFor  DateTime?
+  sentAt        DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([scheduledFor])
+}
