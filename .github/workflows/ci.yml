@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, development ]
+  pull_request:
+    branches: [ main, development ]
+
+jobs:
+  backend:
+    name: Backend CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check backend package.json
+        id: check
+        run: |
+          if [ -f backend/package.json ]; then echo "has_pkg=true" >> "$GITHUB_OUTPUT"; else echo "has_pkg=false" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Setup Node
+        if: steps.check.outputs.has_pkg == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies (backend)
+        if: steps.check.outputs.has_pkg == 'true'
+        working-directory: backend
+        run: npm ci
+
+      - name: Run lint (backend)
+        if: steps.check.outputs.has_pkg == 'true'
+        working-directory: backend
+        run: |
+          if npm run | grep -q 'lint'; then npm run lint; else echo "No lint script"; fi
+
+      - name: Run tests (backend)
+        if: steps.check.outputs.has_pkg == 'true'
+        working-directory: backend
+        run: |
+          if npm run | grep -q 'test'; then npm test --silent; else echo "No test script"; fi
+
+  mobile:
+    name: Mobile CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check mobile package.json
+        id: checkmobile
+        run: |
+          if [ -f mobile/package.json ]; then echo "has_pkg=true" >> "$GITHUB_OUTPUT"; else echo "has_pkg=false" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Setup Node
+        if: steps.checkmobile.outputs.has_pkg == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies (mobile)
+        if: steps.checkmobile.outputs.has_pkg == 'true'
+        working-directory: mobile
+        run: npm ci
+
+      - name: Run lint (mobile)
+        if: steps.checkmobile.outputs.has_pkg == 'true'
+        working-directory: mobile
+        run: |
+          if npm run | grep -q 'lint'; then npm run lint; else echo "No lint script"; fi
+
+      - name: Typecheck (mobile)
+        if: steps.checkmobile.outputs.has_pkg == 'true'
+        working-directory: mobile
+        run: |
+          if npm run | grep -q 'type-check'; then npm run type-check; else echo "No type-check script"; fi
